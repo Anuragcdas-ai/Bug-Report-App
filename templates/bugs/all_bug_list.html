@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="container mt-4">
+    <h2 class="mb-3">All Bugs</h2>
+
+    <table class="table table-bordered table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Title</th>
+                <th>Description</th>
+                <th>Status</th>
+                <th>Priority</th>
+                <th>Created By</th>
+                <th>Assigned To</th>
+                <th>Progress</th>
+                <th>Time Spent (hrs)</th>
+                <th>Due Date</th>
+                <th>Image</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for bug in bugs %}
+            <tr>
+                <td>{{ bug.title }}</td>
+                <td>{{ bug.description|truncatewords:8 }}</td>
+
+                <!-- Status Badge -->
+                <td>
+                    <span class="badge 
+                        {% if bug.status == 'Open' %} bg-danger
+                        {% elif bug.status == 'In Progress' %} bg-warning
+                        {% else %} bg-success
+                        {% endif %}
+                    ">
+                        {{ bug.status }}
+                    </span>
+                </td>
+
+                <!-- Priority -->
+                <td>
+                    <span class="badge 
+                        {% if bug.priority == 'Low' %} bg-secondary
+                        {% elif bug.priority == 'Medium' %} bg-info
+                        {% elif bug.priority == 'High' %} bg-warning
+                        {% else %} bg-danger
+                        {% endif %}
+                    ">
+                        {{ bug.priority }}
+                    </span>
+                </td>
+
+                <!-- Created By -->
+                <td>{{ bug.created_by.username }}</td>
+
+                <!-- Assigned To -->
+                <td>
+                    {% if bug.assigned_to %}
+                        {{ bug.assigned_to.username }}
+                    {% else %}
+                        <span class="text-muted">Not Assigned</span>
+                    {% endif %}
+                </td>
+
+                <!-- Progress Bar -->
+                <td>
+                    <div class="progress" style="height:20px;">
+                        <div class="progress-bar 
+                            {% if bug.progress < 40 %} bg-danger
+                            {% elif bug.progress < 80 %} bg-warning
+                            {% else %} bg-success
+                            {% endif %}
+                        "
+                        role="progressbar"
+                        style="width: {{ bug.progress }}%;">
+                            {{ bug.progress }}%
+                        </div>
+                    </div>
+                </td>
+
+                <!-- Time Spent -->
+                <td>{{ bug.time_spent }}</td>
+
+                <!-- Due Date -->
+                <td>
+                    {% if bug.due_date %}
+                        {{ bug.due_date|date:"M d, Y" }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+
+                <!-- Image -->
+                <td>
+                    {% if bug.image %}
+                        <img src="{{ bug.image.url }}" width="60" height="60" class="rounded">
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+
+                <!-- Actions -->
+                <td>
+                    <a href="{% url 'bug-edit' bug.pk %}" 
+                       class="btn btn-warning btn-sm">Edit</a>
+                    <a href="{% url 'bug-delete' bug.pk %}" 
+                       class="btn btn-danger btn-sm">Delete</a>
+                </td>
+
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="11" class="text-center">
+                    No bugs found.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

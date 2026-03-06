@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Your Bugs</h2>
+<a href="{% url 'bug-add' %}" class="btn btn-primary mb -3">Add Bug</a>
+<table class="table table-bordered">
+    <tr>
+        <th>Title</th>
+        <th>Status</th>
+        <th>Actions</th>
+    </tr>
+    
+    {% for bug in bugs %}
+     <tr>
+        <td>{{ bug.title }}</td>
+        <td>{{ bug.status }}</td>
+        <td>
+            <a href="{% url 'bug-edit' bug.pk %}" class ="btn btn-warning btn-sm">Edit</a>
+            <a href="{% url 'bug-delete' bug.pk %}" class ="btn btn-danger btn-sm">Delete</a>
+
+        </td>
+      </tr>
+
+    {% endfor %}
+
+
+   
+    
+</table>
+
+{% endblock %}

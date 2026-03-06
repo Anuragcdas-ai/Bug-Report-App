@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h2>Bug Form</h2>
+
+<form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="mb-3">
+        <label class="form-label">Title</label>
+        {{ form.title }}
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Description</label>
+        {{ form.description }}
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Status</label>
+        {{ form.status }}
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Priority</label>
+        {{ form.priority }}
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Progress (%)</label>
+        {{ form.progress }}
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Time Spent (hours)</label>
+        {{ form.time_spent }}
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Assign To</label>
+        {{ form.assigned_to }}
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Due Date</label>
+        {{ form.due_date }}
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Notes</label>
+        {{ form.notes }}
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Upload Screenshot</label>
+        {{ form.image }}
+    </div>
+
+    <button type="submit" class="btn btn-success">Submit</button>
+
+</form>
+
+{% endblock %}
