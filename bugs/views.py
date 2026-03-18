@@ -79,16 +79,24 @@ from django.urls import reverse_lazy
 from django.contrib.auth.views import LogoutView
 
 
-class UserBugListView(ListView):           # ✅ no LoginRequiredMixin
+class UserBugListView(ListView):
     model = Bug
     template_name = 'bugs/user_bug_list.html'
     context_object_name = 'bugs'
 
     def get_queryset(self):
-        return Bug.objects.filter(assigned_to=self.request.user)
+
+        user = self.request.user
+
+        # Admin sees all bugs
+        if user.is_superuser:
+            return Bug.objects.all()
+
+        # Normal user sees only assigned bugs
+        return Bug.objects.filter(created_by=user)
 
 
-class BugCreateView(CreateView):           # ✅ no LoginRequiredMixin
+class BugCreateView(CreateView):           
     model = Bug
     form_class = BugForm
     template_name = 'bugs/bug_form.html'
@@ -99,7 +107,7 @@ class BugCreateView(CreateView):           # ✅ no LoginRequiredMixin
         return super().form_valid(form)
 
 
-class BugUpdateView(UserPassesTestMixin, UpdateView):   # ✅ no LoginRequiredMixin
+class BugUpdateView(UserPassesTestMixin, UpdateView):  
     model = Bug
     form_class = BugForm
     template_name = 'bugs/bug_form.html'
@@ -110,7 +118,7 @@ class BugUpdateView(UserPassesTestMixin, UpdateView):   # ✅ no LoginRequiredMi
         return bug.created_by == self.request.user
 
 
-class BugDeleteView(UserPassesTestMixin, DeleteView):   # ✅ no LoginRequiredMixin
+class BugDeleteView(UserPassesTestMixin, DeleteView): 
     model = Bug
     template_name = 'bugs/bug_confirm_delete.html'
     success_url = reverse_lazy('bug-list')
@@ -120,7 +128,7 @@ class BugDeleteView(UserPassesTestMixin, DeleteView):   # ✅ no LoginRequiredMi
         return bug.created_by == self.request.user
 
 
-class AllBugListView(ListView):            # ✅ no LoginRequiredMixin
+class AllBugListView(ListView):            
     model = Bug
     template_name = 'bugs/all_bug_list.html'
     context_object_name = 'bugs'

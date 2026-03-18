@@ -28,6 +28,8 @@ class Bug(models.Model):
     due_date = models.DateTimeField(null =True, blank = True)
     notes  = models.TextField(blank = True)
 
+    
+
 
 
 
