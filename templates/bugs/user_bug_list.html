@@ -1,30 +1,157 @@
 {% extends 'base.html' %}
 {% block content %}
-<h2>Your Bugs</h2>
-<a href="{% url 'bug-add' %}" class="btn btn-primary mb -3">Add Bug</a>
-<table class="table table-bordered">
-    <tr>
-        <th>Title</th>
-        <th>Status</th>
-        <th>Actions</th>
-    </tr>
-    
-    {% for bug in bugs %}
-     <tr>
-        <td>{{ bug.title }}</td>
-        <td>{{ bug.status }}</td>
-        <td>
-            <a href="{% url 'bug-edit' bug.pk %}" class ="btn btn-warning btn-sm">Edit</a>
-            <a href="{% url 'bug-delete' bug.pk %}" class ="btn btn-danger btn-sm">Delete</a>
 
-        </td>
-      </tr>
+<div class="container mt-4">
 
-    {% endfor %}
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Your Bugs</h2>
 
+        <div class="d-flex align-items-center gap-2">
 
-   
-    
-</table>
+            <a href="{% url 'bug-add' %}" class="btn btn-primary">
+                + Add Bug
+            </a>
+
+            <a href="{% url 'bug-download' %}" class="btn btn-success">
+                ⬇ Download
+            </a>
+
+            <!--  Upload Form -->
+            <form id="uploadForm"
+                  method="post"
+                  action="{% url 'bug-upload' %}"
+                  enctype="multipart/form-data"
+                  class="d-flex align-items-center gap-2">
+
+                {% csrf_token %}
+
+                <input type="file"
+                       id="fileInput"
+                       name="file"
+                       accept=".xlsx"
+                       class="form-control form-control-sm"
+                       style="width:200px;" required>
+
+                <!-- Upload -->
+                <button type="submit" class="btn btn-info btn-sm">
+                    ⬆ Upload
+                </button>
+
+                <!-- Clear -->
+                <button type="button"
+                        class="btn btn-secondary btn-sm"
+                        onclick="clearFile()">
+                    ❌ Clear
+                </button>
+
+            </form>
+        </div>
+    </div>
+
+    <!-- ✅ Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} mt-2">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Table -->
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+
+            <table class="table table-hover mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Bug ID</th>
+                        <th>Title</th>
+                        <th>Status</th>
+                        <th>Priority</th>
+                        <th>Progress</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for bug in bugs %}
+                    <tr>
+                        <td><strong>{{ bug.bug_id }}</strong></td>
+                        <td>{{ bug.title }}</td>
+
+                        <td>
+                            <span class="badge 
+                                {% if bug.status == 'Open' %}bg-danger
+                                {% elif bug.status == 'In Progress' %}bg-warning text-dark
+                                {% else %}bg-success
+                                {% endif %}">
+                                {{ bug.status }}
+                            </span>
+                        </td>
+
+                        <td>
+                            <span class="badge 
+                                {% if bug.priority == 'High' or bug.priority == 'Critical' %}bg-danger
+                                {% elif bug.priority == 'Medium' %}bg-warning text-dark
+                                {% else %}bg-secondary
+                                {% endif %}">
+                                {{ bug.priority }}
+                            </span>
+                        </td>
+
+                        <td>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar"
+                                     role="progressbar"
+                                     style="width: {{ bug.progress }}%;">
+                                    {{ bug.progress }}%
+                                </div>
+                            </div>
+                        </td>
+
+                        <td>
+                            <a href="{% url 'bug-edit' bug.pk %}"
+                               class="btn btn-warning btn-sm">
+                               Edit
+                            </a>
+
+                            <a href="{% url 'bug-delete' bug.pk %}"
+                               class="btn btn-danger btn-sm">
+                               Delete
+                            </a>
+                        </td>
+                    </tr>
+
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">
+                            No bugs found 🚫
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!--  SCRIPT -->
+<script>
+function clearFile() {
+    const fileInput = document.getElementById("fileInput");
+
+    // Primary clear
+    fileInput.value = "";
+
+    // Fallback fix (important for stubborn browsers)
+    if (fileInput.value) {
+        fileInput.type = "text";
+        fileInput.type = "file";
+    }
+}
+</script>
 
 {% endblock %}
