@@ -29,9 +29,25 @@ class Bug(models.Model):
     notes  = models.TextField(blank = True)
 
     
+    bug_id = models.CharField(max_length=10, blank=True, null=True)
 
 
 
 
     def __str__(self):
         return self.title
+
+
+    def save(self, *args, **kwargs):
+        if not self.bug_id:
+            last_bug = Bug.objects.order_by('-id').first()
+
+            if last_bug and last_bug.bug_id:
+                last_id = int(last_bug.bug_id.replace('BUG', ''))
+                new_id = last_id + 1
+            else:
+                new_id = 1
+
+            self.bug_id = f"BUG{new_id:03d}"
+
+        super().save(*args, **kwargs)
