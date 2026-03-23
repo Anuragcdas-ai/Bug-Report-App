@@ -1,5 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.db import models
+from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 # Create your models here.
 
@@ -30,6 +34,7 @@ class Bug(models.Model):
 
     
     bug_id = models.CharField(max_length=10, blank=True, null=True)
+    updated_by = models.ForeignKey(User,on_delete=models.SET_NULL, null=True, related_name='updated_bugs')
 
 
 
@@ -51,3 +56,42 @@ class Bug(models.Model):
             self.bug_id = f"BUG{new_id:03d}"
 
         super().save(*args, **kwargs)
+
+
+class Profile(models.Model):
+    ROLE_CHOICES = [
+        ('developer', 'Developer'),
+        ('tester', 'Tester'),
+        ('admin', 'Admin'),
+    ]
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, blank=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.role}"
+
+    # Helper properties — reads directly from User, no duplication
+    @property
+    def first_name(self):
+        return self.user.first_name
+
+    @property
+    def last_name(self):
+        return self.user.last_name
+
+    @property
+    def email(self):
+        return self.user.email
+
+    @property
+    def full_name(self):
+        return self.user.get_full_name() or self.user.username
+
+
+@receiver(post_save, sender=User)
+def create_or_update_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(user=instance)
+    else:
+        Profile.objects.get_or_create(user=instance)  # simple, no extra logic needed

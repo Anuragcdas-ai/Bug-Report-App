@@ -72,27 +72,33 @@
 
 
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
-from django.contrib.auth.mixins import UserPassesTestMixin
-from .models import Bug
-from .forms import BugForm
+from django.views import View
+
+from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
-from django.contrib.auth.views import LogoutView
-import pandas as pd
+
 from django.http import HttpResponse
-from django.views import View
-from django.contrib.auth.mixins import LoginRequiredMixin
-from .models import Bug
-import pandas as pd
-from django.http import HttpResponse
-from django.views import View
-from django.contrib.auth.mixins import LoginRequiredMixin
-from .models import Bug
-import pandas as pd
-from django.views import View
-from django.shortcuts import render, redirect
+
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import LogoutView
+from django.contrib.auth.models import User
+from django.contrib.auth.tokens import default_token_generator
+
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+
+from django.core.mail import send_mail
+from django.conf import settings
+
+import pandas as pd
+
 from .models import Bug
+from .forms import BugForm, ProfileForm
+
+import random
+import string
 
 
 class UserBugListView(ListView):
@@ -132,6 +138,10 @@ class BugUpdateView(UserPassesTestMixin, UpdateView):
     def test_func(self):
         bug = self.get_object()
         return bug.created_by == self.request.user
+    
+    def form_valid(self, form):
+        form.instance.updated_by = self.request.user  
+        return super().form_valid(form)
 
 
 class BugDeleteView(UserPassesTestMixin, DeleteView): 
@@ -236,6 +246,84 @@ class BugUploadView(LoginRequiredMixin, View):
             messages.error(request, str(e))
 
         return redirect('bug-list')
+
+
+def profile_view(request, username):
+    user = get_object_or_404(User, username=username)
+    return render(request, 'bugs/profile.html', {'profile_user': user})
+
+
+@login_required
+def profile_edit(request):
+    user = request.user
+    profile = user.profile
+
+    if request.method == 'POST':
+        form = ProfileForm(request.POST, instance=profile)
+
+        if form.is_valid():
+            form.save()
+
+            # Update user safely
+            user.first_name = form.cleaned_data.get('first_name', user.first_name)
+            user.last_name  = form.cleaned_data.get('last_name', user.last_name)
+            user.email      = form.cleaned_data.get('email', user.email)
+
+            user.save()
+
+            messages.success(request, 'Profile updated successfully.')
+            return redirect('profile', username=user.username)
+
+    else:
+        form = ProfileForm(instance=profile)
+
+    return render(request, 'bugs/profile_edit.html', {'form': form})
+
+
+def generate_temp_password(length=8):
+    chars = string.ascii_letters + string.digits
+    return ''.join(random.choice(chars) for _ in range(length))
+
+
+def custom_password_reset(request):
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip()
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            messages.error(request, 'No account found with that email.')
+            return render(request, 'bugs/password_reset.html')
+
+        #  Generate temporary password
+        temp_password = generate_temp_password()
+
+        #  Set new password securely
+        user.set_password(temp_password)
+        user.save()
+
+        # Send email
+        try:
+            send_mail(
+                subject='🐞 Bug Tracker - Temporary Password',
+                message=(
+                    f"Hello {user.username},\n\n"
+                    f"Your temporary password is:\n\n"
+                    f"{temp_password}\n\n"
+                    f"Please login and change your password immediately.\n"
+                ),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email],
+                fail_silently=False,
+            )
+
+            return redirect('password_reset_done')
+
+        except Exception as e:
+            messages.error(request, f'Email sending failed: {e}')
+            return render(request, 'bugs/password_reset.html')
+
+    return render(request, 'bugs/password_reset.html')
 
         
 

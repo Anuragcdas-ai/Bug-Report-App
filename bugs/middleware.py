@@ -74,14 +74,18 @@ from django.urls import reverse, NoReverseMatch
 
 class LoginRequiredMiddleware:
 
+
     def __init__(self, get_response):
         self.get_response = get_response
 
         self.exempt_urls = [
-            getattr(settings, 'LOGIN_URL', '/'),
+            '/',
             '/logout/',
+            '/bugs/password_reset/',
+            '/bugs/password_reset/done/',
+            '/bugs/reset/',          # covers /bugs/reset/<uidb64>/<token>/
+            '/bugs/reset/done/',
         ]
-
     def __call__(self, request):
 
         # allow login/logout URLs

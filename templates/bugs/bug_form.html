@@ -17,8 +17,17 @@
     </div>
 
     <div class="mb-3">
-        <label class="form-label">Status</label>
+    <label class="form-label">Status</label>
+
+    {% if request.user.profile.role == 'tester' %}
         {{ form.status }}
+    {% else %}
+        <input type="text" 
+               class="form-control" 
+               value="{{ form.instance.status }}" 
+               readonly>
+        <small class="text-muted">Only testers can change status</small>
+    {% endif %}
     </div>
 
     <div class="mb-3">

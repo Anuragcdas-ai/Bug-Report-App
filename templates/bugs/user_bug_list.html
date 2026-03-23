@@ -17,7 +17,7 @@
                 ⬇ Download
             </a>
 
-            <!--  Upload Form -->
+            <!-- Upload Form -->
             <form id="uploadForm"
                   method="post"
                   action="{% url 'bug-upload' %}"
@@ -49,7 +49,7 @@
         </div>
     </div>
 
-    <!-- ✅ Messages -->
+    <!-- Messages -->
     {% if messages %}
         {% for message in messages %}
             <div class="alert alert-{{ message.tags }} mt-2">
@@ -68,8 +68,8 @@
                         <th>Bug ID</th>
                         <th>Title</th>
                         <th>Status</th>
-                        <th>Priority</th>
-                        <th>Progress</th>
+                        <th>Created By</th>
+                        <th>Updated By</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -90,24 +90,14 @@
                             </span>
                         </td>
 
-                        <td>
-                            <span class="badge 
-                                {% if bug.priority == 'High' or bug.priority == 'Critical' %}bg-danger
-                                {% elif bug.priority == 'Medium' %}bg-warning text-dark
-                                {% else %}bg-secondary
-                                {% endif %}">
-                                {{ bug.priority }}
-                            </span>
-                        </td>
+                        <td>{{ bug.created_by.username }}</td>
 
                         <td>
-                            <div class="progress" style="height: 20px;">
-                                <div class="progress-bar"
-                                     role="progressbar"
-                                     style="width: {{ bug.progress }}%;">
-                                    {{ bug.progress }}%
-                                </div>
-                            </div>
+                            {% if bug.updated_by %}
+                                {{ bug.updated_by.username }}
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
                         </td>
 
                         <td>
@@ -138,15 +128,13 @@
 
 </div>
 
-<!--  SCRIPT -->
+<!-- SCRIPT -->
 <script>
 function clearFile() {
     const fileInput = document.getElementById("fileInput");
 
-    // Primary clear
     fileInput.value = "";
 
-    // Fallback fix (important for stubborn browsers)
     if (fileInput.value) {
         fileInput.type = "text";
         fileInput.type = "file";

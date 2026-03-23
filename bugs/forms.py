@@ -5,6 +5,8 @@ from .models import Bug
 
 from django import forms
 from .models import Bug
+from django import forms
+from .models import Profile
 
 class BugForm(forms.ModelForm):
 
@@ -37,3 +39,10 @@ class BugForm(forms.ModelForm):
         if len(description) < 10:
             raise forms.ValidationError("Description must be at least 10 characters")
         return description
+
+
+
+class ProfileForm(forms.ModelForm):
+    class Meta:
+        model  = Profile
+        fields = ['role']
