@@ -1,6 +1,6 @@
 from django.urls import path
 from django.contrib.auth import views as auth_views
-from .views import UserBugListView,BugCreateView,BugUpdateView,BugDeleteView,AllBugListView,BugDownloadView, BugUploadView,profile_view,profile_edit,custom_password_reset,AdminCreateUserView
+from .views import UserBugListView,BugCreateView,BugUpdateView,BugDeleteView,AllBugListView,BugDownloadView, BugUploadView,profile_view,profile_edit,custom_password_reset,AdminCreateUserView,change_password
 
 urlpatterns = [
     path('',UserBugListView.as_view(), name = 'bug-list'),
@@ -25,6 +25,8 @@ urlpatterns = [
              template_name='bugs/password_reset_done.html'
          ),
          name='password_reset_done'),
+
+    path('change-password/', change_password, name='change_password'),
 
    
     

@@ -105,6 +105,12 @@ from django.contrib.auth.forms import UserCreationForm
 from django.views.generic.edit import CreateView
 from django.urls import reverse_lazy
 
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth import logout, authenticate
+
+
 
 class UserBugListView(ListView):
     model = Bug
@@ -400,6 +406,37 @@ class AdminCreateUserView(UserPassesTestMixin, CreateView):
         return super().form_invalid(form)
         
 
+
+
+
+
+@login_required
+def change_password(request):
+    if request.method == 'POST':
+        old_password = request.POST.get('old_password')
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+
+        user = request.user
+
+        # Check old password using authenticate instead of check_password
+        if not authenticate(username=user.username, password=old_password):
+            messages.error(request, "Old password is incorrect")
+            return redirect('change_password')
+
+        if new_password != confirm_password:
+            messages.error(request, "Passwords do not match")
+            return redirect('change_password')
+
+        user.set_password(new_password)
+        user.save()
+
+        logout(request)
+
+        messages.success(request, "Password updated successfully")
+        return redirect('login')
+
+    return render(request, 'bugs/change_password.html')
 
 
 

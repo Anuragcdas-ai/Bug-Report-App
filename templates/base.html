@@ -123,11 +123,14 @@
 <a class="dropdown-item" href="{% url 'profile' request.user.username %}">
     <i class="bi bi-person-circle"></i> My Profile
 </a>
-                    <!-- <li>
-                        <a class="dropdown-item" href="{% url 'profile-settings' %}">
-                            <i class="bi bi-gear"></i> Settings
-                        </a>
-                    </li> -->
+
+<li>
+    <a class="dropdown-item" href="{% url 'change_password' %}">
+        <i class="bi bi-key"></i> Change Password
+    </a>
+</li>
+<li><hr class="dropdown-divider my-1"></li>
+                    
                     <li><hr class="dropdown-divider my-1"></li>
 
                     <!-- Logout -->
