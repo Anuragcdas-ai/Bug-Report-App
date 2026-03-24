@@ -17,6 +17,12 @@
                 ⬇ Download
             </a>
 
+            {% if request.user.is_superuser %}
+            <a href="{% url 'create-user' %}" class="btn btn-primary">
+             Create User
+            </a>
+            {% endif %}
+
             <!-- Upload Form -->
             <form id="uploadForm"
                   method="post"

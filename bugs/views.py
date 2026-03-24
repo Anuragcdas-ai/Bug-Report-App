@@ -100,6 +100,11 @@ from .forms import BugForm, ProfileForm
 import random
 import string
 
+from django.contrib.auth.mixins import UserPassesTestMixin
+from django.contrib.auth.forms import UserCreationForm
+from django.views.generic.edit import CreateView
+from django.urls import reverse_lazy
+
 
 class UserBugListView(ListView):
     model = Bug
@@ -138,9 +143,22 @@ class BugUpdateView(UserPassesTestMixin, UpdateView):
     def test_func(self):
         bug = self.get_object()
         return bug.created_by == self.request.user
-    
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+
+        #  Disable status field for non-testers
+        if self.request.user.profile.role != 'tester':
+            form.fields['status'].disabled = True
+
+        return form
+
     def form_valid(self, form):
-        form.instance.updated_by = self.request.user  
+        #  Backend protection
+        if self.request.user.profile.role != 'tester':
+            form.instance.status = self.get_object().status
+
+        form.instance.updated_by = self.request.user
         return super().form_valid(form)
 
 
@@ -273,6 +291,8 @@ def profile_edit(request):
 
             messages.success(request, 'Profile updated successfully.')
             return redirect('profile', username=user.username)
+        else:
+            print(form.errors)  # DEBUG
 
     else:
         form = ProfileForm(instance=profile)
@@ -325,6 +345,25 @@ def custom_password_reset(request):
 
     return render(request, 'bugs/password_reset.html')
 
+
+
+
+class AdminCreateUserView(UserPassesTestMixin, CreateView):
+    model = User
+    form_class = UserCreationForm
+    template_name = 'bugs/create_user.html'
+    success_url = reverse_lazy('bug-list')
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def form_valid(self, form):
+        print("✅ FORM VALID - creating user")
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        print("❌ FORM INVALID - errors:", form.errors)  # ← shows exact error in terminal
+        return super().form_invalid(form)
         
 
 

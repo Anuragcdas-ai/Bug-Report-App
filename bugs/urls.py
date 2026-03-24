@@ -1,6 +1,6 @@
 from django.urls import path
 from django.contrib.auth import views as auth_views
-from .views import UserBugListView,BugCreateView,BugUpdateView,BugDeleteView,AllBugListView,BugDownloadView, BugUploadView,profile_view,profile_edit,custom_password_reset
+from .views import UserBugListView,BugCreateView,BugUpdateView,BugDeleteView,AllBugListView,BugDownloadView, BugUploadView,profile_view,profile_edit,custom_password_reset,AdminCreateUserView
 
 urlpatterns = [
     path('',UserBugListView.as_view(), name = 'bug-list'),
@@ -12,6 +12,9 @@ urlpatterns = [
     path('upload/', BugUploadView.as_view(), name='bug-upload'),
     
     path('profile/edit/', profile_edit, name='profile-settings'),
+
+        # User Management (Superuser only)
+    path('users/create/', AdminCreateUserView.as_view(), name='create-user'),
 
     # Dynamic route LAST
     path('profile/<str:username>/', profile_view, name='profile'),
