@@ -241,27 +241,61 @@ class BugUploadView(LoginRequiredMixin, View):
         try:
             df = pd.read_excel(file)
 
-            required_columns = ['Title', 'Description', 'Status', 'Priority']
+            required_columns = ['Bug ID', 'Title', 'Description', 'Status', 'Priority']
             if not all(col in df.columns for col in required_columns):
-                messages.error(request, "Invalid Excel format")
+                messages.error(request, "Invalid Excel format. Required columns missing.")
                 return redirect('bug-list')
 
             created_count = 0
+            updated_count = 0
+            error_rows = []
 
-            for _, row in df.iterrows():
-                Bug.objects.create(
-                    title=str(row['Title']),
-                    description=str(row['Description']),
-                    status=row['Status'],
-                    priority=row['Priority'],
-                    created_by=request.user
-                )
-                created_count += 1
+            for index, row in df.iterrows():
 
-            messages.success(request, f"{created_count} bugs uploaded successfully")
+                bug_id = str(row['Bug ID']).strip()
+
+                if not bug_id:
+                    continue
+
+                existing_bug = Bug.objects.filter(bug_id=bug_id).first()
+
+                #  If exists and belongs to another user → ERROR
+                if existing_bug and existing_bug.created_by != request.user:
+                    error_rows.append(f"Row {index + 2}: Bug ID {bug_id} already exists for another user")
+                    continue
+
+                #  Update if same user
+                if existing_bug:
+                    existing_bug.title = str(row['Title'])
+                    existing_bug.description = str(row['Description'])
+                    existing_bug.status = row['Status']
+                    existing_bug.priority = row['Priority']
+                    existing_bug.save()
+                    updated_count += 1
+
+                #  Create new
+                else:
+                    Bug.objects.create(
+                        bug_id=bug_id,
+                        title=str(row['Title']),
+                        description=str(row['Description']),
+                        status=row['Status'],
+                        priority=row['Priority'],
+                        created_by=request.user
+                    )
+                    created_count += 1
+
+            #  Show messages
+            if error_rows:
+                messages.error(request, "Some rows failed:\n" + "\n".join(error_rows[:5]))
+
+            messages.success(
+                request,
+                f"{created_count} created, {updated_count} updated"
+            )
 
         except Exception as e:
-            messages.error(request, str(e))
+            messages.error(request, f"Error: {str(e)}")
 
         return redirect('bug-list')
 
@@ -358,11 +392,11 @@ class AdminCreateUserView(UserPassesTestMixin, CreateView):
         return self.request.user.is_superuser
 
     def form_valid(self, form):
-        print("✅ FORM VALID - creating user")
+        print("FORM VALID - creating user") #todo
         return super().form_valid(form)
 
     def form_invalid(self, form):
-        print("❌ FORM INVALID - errors:", form.errors)  # ← shows exact error in terminal
+        print(" FORM INVALID - errors:", form.errors)  # ← shows exact error in terminal
         return super().form_invalid(form)
         
 
