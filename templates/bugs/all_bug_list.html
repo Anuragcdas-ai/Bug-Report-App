@@ -17,7 +17,7 @@
                 <th>Time Spent (hrs)</th>
                 <th>Due Date</th>
                 <th>Image</th>
-                <th>Actions</th>
+               
             </tr>
         </thead>
         <tbody>
@@ -80,13 +80,7 @@
                     {% endif %}
                 </td>
 
-                <!-- Actions -->
-                <td>
-                    <a href="{% url 'bug-edit' bug.pk %}" 
-                       class="btn btn-warning btn-sm">Edit</a>
-                    <a href="{% url 'bug-delete' bug.pk %}" 
-                       class="btn btn-danger btn-sm">Delete</a>
-                </td>
+               
 
             </tr>
             {% empty %}

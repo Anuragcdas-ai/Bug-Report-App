@@ -71,45 +71,45 @@
 
 
 
+# Django generic views
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.views import View
+from django.views.generic.edit import CreateView, UpdateView
 
+# Django shortcuts and HTTP
 from django.shortcuts import render, redirect, get_object_or_404
-from django.urls import reverse_lazy
-
 from django.http import HttpResponse
 
-from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.views import LogoutView
+# URL utilities
+from django.urls import reverse_lazy
+
+# Auth and permissions
 from django.contrib.auth.models import User
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin, PermissionRequiredMixin
+from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.views import LogoutView
+from django.contrib.auth import update_session_auth_hash, logout, authenticate
 from django.contrib.auth.tokens import default_token_generator
 
+# Messages
+from django.contrib import messages
+
+# Utilities
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
-
 from django.core.mail import send_mail
 from django.conf import settings
 
+# Third-party
 import pandas as pd
-
-from .models import Bug
-from .forms import BugForm, ProfileForm
-
 import random
 import string
 
-from django.contrib.auth.mixins import UserPassesTestMixin
-from django.contrib.auth.forms import UserCreationForm
-from django.views.generic.edit import CreateView
-from django.urls import reverse_lazy
+# Local app
+from .models import Bug
+from .forms import BugForm, ProfileForm, AdminUserCreationForm
 
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.contrib.auth import update_session_auth_hash
-from django.contrib.auth import logout, authenticate
-from django.contrib.auth.mixins import PermissionRequiredMixin
 
 
 
@@ -136,28 +136,62 @@ class BugCreateView(CreateView):
     template_name = 'bugs/bug_form.html'
     success_url = reverse_lazy('bug-list')
 
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+
+        if not self.request.user.has_perm('bugs.can_change_status'):
+            form.fields['status'].required = False   #  prevent validation error
+
+        return form
+    
     def form_valid(self, form):
+        if not self.request.user.has_perm('bugs.can_change_status'):
+            form.instance.status = 'Open'  #  valid choice
+
         form.instance.created_by = self.request.user
         return super().form_valid(form)
 
+   
 
-class BugUpdateView(PermissionRequiredMixin, UpdateView):
+
+class BugUpdateView(UpdateView):
     model = Bug
     form_class = BugForm
     template_name = 'bugs/bug_form.html'
-    success_url = reverse_lazy('bug_list')
+    success_url = reverse_lazy('bug-list')
 
-    permission_required = 'bugs.change_bug'
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        user = self.request.user
+
+        # 🔹 If ONLY status permission → show only status field
+        if user.has_perm('bugs.can_change_status') and not user.has_perm('bugs.change_bug'):
+            form.fields = {
+                key: value for key, value in form.fields.items()
+                if key == 'status'
+            }
+
+        return form
 
     def form_valid(self, form):
-        form.instance.updated_by = self.request.user
+        user = self.request.user
+        bug = self.get_object()
+
+        # 🔒 Backend protection (VERY IMPORTANT)
+        if user.has_perm('bugs.can_change_status') and not user.has_perm('bugs.change_bug'):
+            # Only allow status change, keep others same
+            for field in [f.name for f in Bug._meta.fields]:
+                if field != 'status' and field != 'id':
+                    setattr(form.instance, field, getattr(bug, field))
+
+        # Track updater
+        form.instance.updated_by = user
+
         return super().form_valid(form)
-    
-    def dispatch(self, request, *args, **kwargs):
-        print("User:", request.user)
-        print("Has perm:", request.user.has_perm('bugs.change_bug'))
-        print("Groups:", request.user.groups.all())
-        return super().dispatch(request, *args, **kwargs)
+
+    def form_invalid(self, form):
+        print("❌ FORM ERRORS:", form.errors)
+        return super().form_invalid(form)
 
 
 class BugDeleteView(UserPassesTestMixin, DeleteView): 
@@ -167,7 +201,8 @@ class BugDeleteView(UserPassesTestMixin, DeleteView):
 
     def test_func(self):
         bug = self.get_object()
-        return bug.created_by == self.request.user
+        user = self.request.user
+        return user.is_superuser or bug.created_by == user
 
 
 class AllBugListView(ListView):            
@@ -298,9 +333,21 @@ class BugUploadView(LoginRequiredMixin, View):
         return redirect('bug-list')
 
 
+
 def profile_view(request, username):
     user = get_object_or_404(User, username=username)
-    return render(request, 'bugs/profile.html', {'profile_user': user})
+
+    can_edit = False
+    if request.user.is_authenticated:
+        can_edit = request.user.is_superuser or (
+            request.user == user and
+            request.user.has_perm('bugs.edit_user_profile_perm')
+        )
+
+    return render(request, 'bugs/profile.html', {
+        'profile_user': user,
+        'can_edit': can_edit
+    })
 
 
 @login_required
@@ -380,9 +427,10 @@ def custom_password_reset(request):
 
 
 
+
 class AdminCreateUserView(UserPassesTestMixin, CreateView):
     model = User
-    form_class = UserCreationForm
+    form_class = AdminUserCreationForm
     template_name = 'bugs/create_user.html'
     success_url = reverse_lazy('bug-list')
 
@@ -390,13 +438,26 @@ class AdminCreateUserView(UserPassesTestMixin, CreateView):
         return self.request.user.is_superuser
 
     def form_valid(self, form):
-        print("FORM VALID - creating user") #todo
-        return super().form_valid(form)
+        # Save the User first
+        response = super().form_valid(form)
+
+        # self.object is the newly created User
+        user = self.object
+        user.first_name = form.cleaned_data['first_name']
+        user.last_name = form.cleaned_data['last_name']
+        user.email = form.cleaned_data['email']
+        user.save()
+
+        # Update the Profile (auto-created by signal)
+        profile = user.profile
+        profile.role = form.cleaned_data['role']
+        profile.save()  # triggers assign_user_to_group signal
+
+        return response
 
     def form_invalid(self, form):
-        print(" FORM INVALID - errors:", form.errors)  # ← shows exact error in terminal
+        print("FORM INVALID - errors:", form.errors)
         return super().form_invalid(form)
-        
 
 
 

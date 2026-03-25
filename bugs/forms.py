@@ -1,12 +1,9 @@
 
 
 from django import forms
-from .models import Bug
-
-from django import forms
-from .models import Bug
-from django import forms
-from .models import Profile
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
+from .models import Bug, Profile
 
 class BugForm(forms.ModelForm):
 
@@ -46,3 +43,19 @@ class ProfileForm(forms.ModelForm):
     class Meta:
         model  = Profile
         fields = ['role']
+
+
+
+
+class AdminUserCreationForm(UserCreationForm):
+    first_name = forms.CharField(max_length=30, required=True)
+    last_name = forms.CharField(max_length=30, required=True)
+    email = forms.EmailField(required=True)
+    role = forms.ChoiceField(choices=Profile.ROLE_CHOICES, required=False)
+
+    class Meta:
+        model = User
+        fields = [
+            'username', 'first_name', 'last_name',
+            'email', 'role', 'password1', 'password2'
+        ]

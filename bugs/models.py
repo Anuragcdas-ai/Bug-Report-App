@@ -1,10 +1,7 @@
 from django.db import models
-from django.contrib.auth.models import User
-from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.contrib.auth.models import Group
 
 # Create your models here.
 
@@ -16,7 +13,7 @@ class Bug(models.Model):
 
     title = models.CharField(max_length = 200)
     description = models.TextField()
-    status = models.CharField(max_length = 20, choices = STATUS_CHOICES, default='Open')
+    status = models.CharField(max_length = 20, choices = STATUS_CHOICES, default='Open',null=True)
     created_by = models.ForeignKey(User,on_delete = models.CASCADE)
     created_at = models.DateTimeField(auto_now_add = True)
     image = models.ImageField(upload_to ='bug_images/',blank =True, null =True)
@@ -36,6 +33,12 @@ class Bug(models.Model):
     
     bug_id = models.CharField(max_length=10, blank=True, null=True)
     updated_by = models.ForeignKey(User,on_delete=models.SET_NULL, null=True, related_name='updated_bugs')
+
+
+    class Meta:
+     permissions = [
+           ("can_change_status", "Can change bug status"),
+        ]
 
 
 
@@ -60,6 +63,8 @@ class Bug(models.Model):
 
 
 class Profile(models.Model):
+
+    
     ROLE_CHOICES = [
         ('developer', 'Developer'),
         ('tester', 'Tester'),
@@ -88,6 +93,11 @@ class Profile(models.Model):
     @property
     def full_name(self):
         return self.user.get_full_name() or self.user.username
+    
+    class Meta:
+        permissions = [
+            ("edit_user_profile_perm", "Can edit user profile"),
+        ]
 
 
 @receiver(post_save, sender=User)
@@ -115,3 +125,5 @@ def assign_user_to_group(sender, instance, **kwargs):
     elif instance.role == 'admin':
         group, _ = Group.objects.get_or_create(name='Admin')
         user.groups.add(group)
+
+

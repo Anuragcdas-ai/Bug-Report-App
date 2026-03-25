@@ -1,11 +1,18 @@
 from django.urls import path
 from django.contrib.auth import views as auth_views
 from .views import UserBugListView,BugCreateView,BugUpdateView,BugDeleteView,AllBugListView,BugDownloadView, BugUploadView,profile_view,profile_edit,custom_password_reset,AdminCreateUserView,change_password
+from django.contrib.auth.decorators import user_passes_test
+
+
+def can_edit_bug(user):
+    return user.has_perm('bugs.change_bug') or user.has_perm('bugs.can_change_status')
 
 urlpatterns = [
     path('',UserBugListView.as_view(), name = 'bug-list'),
     path('add/',BugCreateView.as_view(),name = 'bug-add'),
-    path('edit/<int:pk>',BugUpdateView.as_view(), name ='bug-edit'),
+    path(  'edit/<int:pk>', user_passes_test(can_edit_bug, login_url='login')(  # decorator
+          BugUpdateView.as_view() ),name='bug-edit'
+    ),
     path('delete/<int:pk>',BugDeleteView.as_view(), name = 'bug-delete'),
     path('all-bugs/', AllBugListView.as_view(), name='all-bugs'),
     path('download/', BugDownloadView.as_view(), name='bug-download'),
