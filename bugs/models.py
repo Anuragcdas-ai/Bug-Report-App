@@ -4,6 +4,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.contrib.auth.models import Group
 
 # Create your models here.
 
@@ -95,3 +96,22 @@ def create_or_update_profile(sender, instance, created, **kwargs):
         Profile.objects.create(user=instance)
     else:
         Profile.objects.get_or_create(user=instance)  # simple, no extra logic needed
+
+@receiver(post_save, sender=Profile)
+def assign_user_to_group(sender, instance, **kwargs):
+    user = instance.user
+
+    # Remove user from all role-based groups first
+    user.groups.clear()
+
+    if instance.role == 'tester':
+        group, _ = Group.objects.get_or_create(name='Tester')
+        user.groups.add(group)
+
+    elif instance.role == 'developer':
+        group, _ = Group.objects.get_or_create(name='Developer')
+        user.groups.add(group)
+
+    elif instance.role == 'admin':
+        group, _ = Group.objects.get_or_create(name='Admin')
+        user.groups.add(group)

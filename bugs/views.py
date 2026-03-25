@@ -109,6 +109,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth import logout, authenticate
+from django.contrib.auth.mixins import PermissionRequiredMixin
 
 
 
@@ -140,32 +141,23 @@ class BugCreateView(CreateView):
         return super().form_valid(form)
 
 
-class BugUpdateView(UserPassesTestMixin, UpdateView):  
+class BugUpdateView(PermissionRequiredMixin, UpdateView):
     model = Bug
     form_class = BugForm
     template_name = 'bugs/bug_form.html'
-    success_url = reverse_lazy('bug-list')
+    success_url = reverse_lazy('bug_list')
 
-    def test_func(self):
-        bug = self.get_object()
-        return bug.created_by == self.request.user
-
-    def get_form(self, form_class=None):
-        form = super().get_form(form_class)
-
-        #  Disable status field for non-testers
-        if self.request.user.profile.role != 'tester':
-            form.fields['status'].disabled = True
-
-        return form
+    permission_required = 'bugs.change_bug'
 
     def form_valid(self, form):
-        #  Backend protection
-        if self.request.user.profile.role != 'tester':
-            form.instance.status = self.get_object().status
-
         form.instance.updated_by = self.request.user
         return super().form_valid(form)
+    
+    def dispatch(self, request, *args, **kwargs):
+        print("User:", request.user)
+        print("Has perm:", request.user.has_perm('bugs.change_bug'))
+        print("Groups:", request.user.groups.all())
+        return super().dispatch(request, *args, **kwargs)
 
 
 class BugDeleteView(UserPassesTestMixin, DeleteView): 

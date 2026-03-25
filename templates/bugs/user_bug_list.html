@@ -107,10 +107,9 @@
                         </td>
 
                         <td>
-                            <a href="{% url 'bug-edit' bug.pk %}"
-                               class="btn btn-warning btn-sm">
-                               Edit
-                            </a>
+                            {% if perms.bugs.change_bug %}
+                              <a href="{% url 'bug-edit' bug.id %}"class="btn btn-warning btn-sm">Edit</a>
+                            {% endif %}
 
                             <a href="{% url 'bug-delete' bug.pk %}"
                                class="btn btn-danger btn-sm">
