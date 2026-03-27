@@ -136,17 +136,47 @@ class UserBugListView(ListView):
     model = Bug
     template_name = 'bugs/user_bug_list.html'
     context_object_name = 'bugs'
+    paginate_by = 10  # Add pagination for better performance
 
     def get_queryset(self):
-
         user = self.request.user
-
-        # Admin sees all bugs
-        if user.is_superuser:
-            return Bug.objects.all()
-
         
-        return Bug.objects.filter(created_by=user)
+        # Base queryset
+        if user.is_superuser:
+            queryset = Bug.objects.all()
+        else:
+            queryset = Bug.objects.filter(created_by=user)
+        
+        # Apply sprint filter
+        sprint_id = self.request.GET.get('sprint')
+        if sprint_id:
+            queryset = queryset.filter(sprint_id=sprint_id)
+        
+        # Apply platform filter - FIX for CharField
+        platform_value = self.request.GET.get('platform')
+        if platform_value:
+            # Since platforms is a CharField, filter by exact match or contains
+            queryset = queryset.filter(platforms__icontains=platform_value)
+        
+        # Apply status filter
+        status = self.request.GET.get('status')
+        if status:
+            queryset = queryset.filter(status=status)
+        
+        return queryset.order_by('-created_at')  # Show newest first
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Get all active sprints for filter dropdown
+        from .models import Sprint
+        context['sprints'] = Sprint.objects.filter(is_active=True).order_by('-created_at')
+        
+        # Get unique platform values from existing bugs for filter dropdown
+        # This ensures only platforms that actually have bugs are shown
+        context['platforms'] = Bug.objects.values_list('platforms', flat=True).distinct().order_by('platforms')
+        
+        return context
 
 
 # Update BugCreateView to handle sprints
