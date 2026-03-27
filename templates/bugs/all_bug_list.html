@@ -94,4 +94,31 @@
     </table>
 </div>
 
+
+<div class="card mt-4 p-3">
+    <h5 class="mb-3">Developer Stats</h5>
+    <div id="dev-stats"></div>
+</div>
+
+<script>
+fetch('/bugs/api/developer-stats/')
+    .then(response => response.json())
+    .then(data => {
+        let container = document.getElementById('dev-stats');
+        container.innerHTML = '';
+
+        data.forEach(dev => {
+            container.innerHTML += `
+                <div class="border rounded p-2 mb-2">
+                    <strong>${dev.full_name}</strong> (@${dev.username})<br>
+                    📧 ${dev.email}<br>
+                    ✅ Completed: ${dev.completed} |
+                    🔄 In Progress: ${dev.in_progress} |
+                    ⏳ Pending: ${dev.pending}
+                </div>
+            `;
+        });
+    });
+</script>
+
 {% endblock %}
