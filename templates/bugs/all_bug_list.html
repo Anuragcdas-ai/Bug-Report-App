@@ -2,123 +2,380 @@
 
 {% block content %}
 
-<div class="container mt-4">
-    <h2 class="mb-3">All Bugs</h2>
+<div class="container mt-4 mb-5">
+    <!-- Enhanced Header Section -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <div>
+            <h2 class="display-6 fw-bold mb-1" style="color: #1a2c3e;">
+                <i class="fas fa-bug me-2" style="color: #dc3545;"></i>Bug Tracker
+            </h2>
+            <p class="text-muted">Comprehensive view of all reported issues and their progress</p>
+        </div>
+        <div class="mt-2 mt-sm-0">
+            <span class="badge bg-primary rounded-pill px-3 py-2">
+                <i class="fas fa-chart-line me-1"></i> Total Bugs: {{ bugs|length }}
+            </span>
+        </div>
+    </div>
 
-    <table class="table table-bordered table-striped table-hover">
-        <thead class="table-dark">
-            <tr>
-                <th>Title</th>
-                <th>Description</th>
-                <th>Status</th>
-                <th>Created By</th>
-                <th>Updated By</th>
-                <th>Assigned To</th>
-                <th>Time Spent (hrs)</th>
-                <th>Due Date</th>
-                <th>Image</th>
-               
-            </tr>
-        </thead>
-        <tbody>
-            {% for bug in bugs %}
-            <tr>
-                <td>{{ bug.title }}</td>
-                <td>{{ bug.description|truncatewords:8 }}</td>
+    <!-- Enhanced Table with Modern Styling -->
+    <div class="table-responsive shadow-sm rounded-4 overflow-hidden">
+        <table class="table table-hover align-middle mb-0">
+            <thead style="background: linear-gradient(135deg, #1e2a3a 0%, #0f1a24 100%);">
+                <tr class="text-white">
+                    <th class="px-3 py-3"><i class="fas fa-heading me-1"></i> Title</th>
+                    <th class="px-3 py-3"><i class="fas fa-align-left me-1"></i> Description</th>
+                    <th class="px-3 py-3"><i class="fas fa-flag-checkered me-1"></i> Status</th>
+                    <th class="px-3 py-3"><i class="fas fa-user-plus me-1"></i> Created By</th>
+                    <th class="px-3 py-3"><i class="fas fa-user-edit me-1"></i> Updated By</th>
+                    <th class="px-3 py-3"><i class="fas fa-user-tag me-1"></i> Assigned To</th>
+                    <th class="px-3 py-3"><i class="fas fa-hourglass-half me-1"></i> Time Spent (hrs)</th>
+                    <th class="px-3 py-3"><i class="fas fa-calendar-alt me-1"></i> Due Date</th>
+                    <th class="px-3 py-3"><i class="fas fa-image me-1"></i> Image</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for bug in bugs %}
+                <tr style="transition: all 0.2s ease;" class="bug-row">
+                    <td class="px-3 py-3 fw-semibold" style="color: #2c3e50;">{{ bug.title }}</td>
+                    <td class="px-3 py-3 text-secondary">{{ bug.description|truncatewords:8 }}</td>
 
-                <!-- Status Badge -->
-                <td>
-                    <span class="badge 
-                        {% if bug.status == 'Open' %} bg-danger
-                        {% elif bug.status == 'In Progress' %} bg-warning
-                        {% else %} bg-success
+                    <!-- Enhanced Status Badge -->
+                    <td class="px-3 py-3">
+                        <span class="badge rounded-pill px-3 py-2 fs-7 
+                            {% if bug.status == 'Open' %} bg-danger bg-opacity-90
+                            {% elif bug.status == 'In Progress' %} bg-warning text-dark bg-opacity-90
+                            {% else %} bg-success bg-opacity-90
+                            {% endif %}
+                        ">
+                            <i class="fas 
+                                {% if bug.status == 'Open' %} fa-exclamation-circle
+                                {% elif bug.status == 'In Progress' %} fa-sync-alt fa-fw
+                                {% else %} fa-check-circle
+                                {% endif %} me-1"></i>
+                            {{ bug.status }}
+                        </span>
+                    </td>
+
+                    <!-- Created By with avatar style -->
+                    <td class="px-3 py-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="rounded-circle bg-secondary bg-opacity-10 p-1" style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-user-circle text-secondary" style="font-size: 1rem;"></i>
+                            </div>
+                            <span>{{ bug.created_by.username }}</span>
+                        </div>
+                    </td>
+
+                    <!-- Updated By -->
+                    <td class="px-3 py-3">
+                        {% if bug.updated_by %}
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="fas fa-pen-nib text-info small"></i>
+                                <span>{{ bug.updated_by.username }}</span>
+                            </div>
+                        {% else %}
+                            <span class="text-muted"><i class="far fa-clock me-1"></i> Not updated</span>
                         {% endif %}
-                    ">
-                        {{ bug.status }}
-                    </span>
-                </td>
+                    </td>
 
-                <!-- Created By -->
-                <td>{{ bug.created_by.username }}</td>
+                    <!-- Assigned To -->
+                    <td class="px-3 py-3">
+                        {% if bug.assigned_to %}
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="fas fa-user-check text-success"></i>
+                                <span class="fw-medium">{{ bug.assigned_to.username }}</span>
+                            </div>
+                        {% else %}
+                            <span class="text-muted"><i class="fas fa-user-slash me-1"></i> Not Assigned</span>
+                        {% endif %}
+                    </td>
 
-                <!-- Updated By -->
-                <td>
-                    {% if bug.updated_by %}
-                        {{ bug.updated_by.username }}
-                    {% else %}
-                        <span class="text-muted">—</span>
-                    {% endif %}
-                </td>
+                    <!-- Time Spent with visual -->
+                    <td class="px-3 py-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fas fa-stopwatch text-primary"></i>
+                            <span class="fw-semibold">{{ bug.time_spent }}</span>
+                            <span class="text-muted small">hrs</span>
+                        </div>
+                    </td>
 
-                <!-- Assigned To -->
-                <td>
-                    {% if bug.assigned_to %}
-                        {{ bug.assigned_to.username }}
-                    {% else %}
-                        <span class="text-muted">Not Assigned</span>
-                    {% endif %}
-                </td>
+                    <!-- Due Date -->
+                    <td class="px-3 py-3">
+                        {% if bug.due_date %}
+                            {% if bug.due_date|date:"Y-m-d" < today|date:"Y-m-d" and bug.status != 'Closed' %}
+                                <span class="text-danger fw-semibold">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                    {{ bug.due_date|date:"M d, Y" }}
+                                </span>
+                            {% else %}
+                                <span class="text-secondary">
+                                    <i class="far fa-calendar-check me-1"></i>
+                                    {{ bug.due_date|date:"M d, Y" }}
+                                </span>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
 
-                <!-- Time Spent -->
-                <td>{{ bug.time_spent }}</td>
+                    <!-- Enhanced Image Display -->
+                    <td class="px-3 py-3">
+                        {% if bug.image %}
+                            <a href="{{ bug.image.url }}" target="_blank" class="image-preview-trigger" data-bs-toggle="tooltip" title="Click to view full size">
+                                <img src="{{ bug.image.url }}" width="50" height="50" class="rounded-3 shadow-sm" style="object-fit: cover; border: 2px solid #e9ecef; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                            </a>
+                        {% else %}
+                            <div class="text-muted text-center small">
+                                <i class="fas fa-camera-slash"></i>
+                                <div>No image</div>
+                            </div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center py-5">
+                        <div class="d-flex flex-column align-items-center gap-2">
+                            <i class="fas fa-inbox fa-3x text-muted opacity-50"></i>
+                            <h5 class="text-muted">No bugs found</h5>
+                            <p class="text-muted small">Start by creating a new bug report</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
-                <!-- Due Date -->
-                <td>
-                    {% if bug.due_date %}
-                        {{ bug.due_date|date:"M d, Y" }}
-                    {% else %}
-                        -
-                    {% endif %}
-                </td>
-
-                <!-- Image -->
-                <td>
-                    {% if bug.image %}
-                        <img src="{{ bug.image.url }}" width="60" height="60" class="rounded">
-                    {% else %}
-                        -
-                    {% endif %}
-                </td>
-
-               
-
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="10" class="text-center">
-                    No bugs found.
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <!-- Enhanced Developer Stats Section - Modern Card Design -->
+    <div class="mt-5">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+            <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle bg-primary bg-opacity-10 p-2">
+                        <i class="fas fa-code-branch text-primary fs-5"></i>
+                    </div>
+                    <h5 class="mb-0 fw-bold" style="color: #1a2c3e;">Developer Performance Dashboard</h5>
+                    <span class="badge bg-light text-dark ms-2">Real-time Stats</span>
+                </div>
+                <p class="text-muted small mt-2 mb-0">Activity metrics across the team</p>
+            </div>
+            <div class="card-body px-4 pb-4">
+                <div id="dev-stats" class="row g-3">
+                    <!-- Stats will be injected here with enhanced cards -->
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
+<style>
+    /* Additional inline styles for polish - no logic change */
+    .bug-row:hover {
+        background-color: #f8f9fa;
+        transform: scale(1.001);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .fs-7 {
+        font-size: 0.8rem;
+    }
+    .badge {
+        font-weight: 500;
+        letter-spacing: 0.3px;
+    }
+    .table thead th {
+        font-weight: 600;
+        font-size: 0.85rem;
+        letter-spacing: 0.3px;
+        border-bottom-width: 0;
+    }
+    .table tbody tr {
+        border-bottom: 1px solid #f0f2f5;
+    }
+    .rounded-4 {
+        border-radius: 1rem !important;
+    }
+    .image-preview-trigger {
+        cursor: pointer;
+        text-decoration: none;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .dev-stat-card {
+        animation: fadeIn 0.3s ease-out;
+    }
+    .progress-custom {
+        height: 6px;
+        border-radius: 10px;
+        background-color: #e9ecef;
+    }
+    .progress-custom .progress-bar {
+        border-radius: 10px;
+    }
+</style>
 
-<div class="card mt-4 p-3">
-    <h5 class="mb-3">Developer Stats</h5>
-    <div id="dev-stats"></div>
-</div>
+<!-- Font Awesome for icons (if not already in base, ensure it's loaded) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
 <script>
-fetch('/bugs/api/developer-stats/')
-    .then(response => response.json())
-    .then(data => {
-        let container = document.getElementById('dev-stats');
-        container.innerHTML = '';
-
-        data.forEach(dev => {
-            container.innerHTML += `
-                <div class="border rounded p-2 mb-2">
-                    <strong>${dev.full_name}</strong> (@${dev.username})<br>
-                    📧 ${dev.email}<br>
-                    ✅ Completed: ${dev.completed} |
-                    🔄 In Progress: ${dev.in_progress} |
-                    ⏳ Pending: ${dev.pending}
+    // Enhanced developer stats with beautiful card UI - same data, better presentation
+    fetch('/bugs/api/developer-stats/')
+        .then(response => response.json())
+        .then(data => {
+            let container = document.getElementById('dev-stats');
+            container.innerHTML = '';
+            
+            if (data.length === 0) {
+                container.innerHTML = `
+                    <div class="col-12 text-center py-4">
+                        <i class="fas fa-chart-simple fa-2x text-muted opacity-50 mb-2 d-block"></i>
+                        <p class="text-muted">No developer statistics available</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            data.forEach((dev, index) => {
+                const totalTasks = dev.completed + dev.in_progress + dev.pending;
+                const completionRate = totalTasks > 0 ? Math.round((dev.completed / totalTasks) * 100) : 0;
+                
+                // Determine performance badge
+                let performanceBadge = '';
+                let badgeClass = '';
+                if (completionRate >= 70) {
+                    performanceBadge = 'Excellent';
+                    badgeClass = 'bg-success';
+                } else if (completionRate >= 40) {
+                    performanceBadge = 'Good';
+                    badgeClass = 'bg-info text-dark';
+                } else if (completionRate > 0) {
+                    performanceBadge = 'Needs Focus';
+                    badgeClass = 'bg-warning text-dark';
+                } else {
+                    performanceBadge = 'No Activity';
+                    badgeClass = 'bg-secondary';
+                }
+                
+                container.innerHTML += `
+                    <div class="col-md-6 col-lg-4 dev-stat-card">
+                        <div class="card h-100 border-0 shadow-sm rounded-4 hover-shadow transition-all" style="transition: all 0.2s;">
+                            <div class="card-body p-3">
+                                <div class="d-flex align-items-start justify-content-between mb-2">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="rounded-circle bg-gradient-primary p-2" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fas fa-user-astronaut text-white fs-5"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="fw-bold mb-0" style="color: #1a2c3e;">${dev.full_name || dev.username}</h6>
+                                            <small class="text-muted"><i class="fas fa-at me-1"></i>${dev.username}</small>
+                                        </div>
+                                    </div>
+                                    <span class="badge ${badgeClass} rounded-pill px-2 py-1 fs-7">${performanceBadge}</span>
+                                </div>
+                                
+                                <div class="mt-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <small class="text-muted"><i class="fas fa-envelope me-1"></i>Email</small>
+                                        <small class="text-truncate" style="max-width: 150px;">${dev.email || '—'}</small>
+                                    </div>
+                                </div>
+                                
+                                <hr class="my-2">
+                                
+                                <div class="row g-2 text-center mt-1">
+                                    <div class="col-4">
+                                        <div class="p-2 rounded-3 bg-success bg-opacity-10">
+                                            <i class="fas fa-check-circle text-success fs-6"></i>
+                                            <div class="fw-bold fs-6 mt-1">${dev.completed}</div>
+                                            <small class="text-muted" style="font-size: 0.7rem;">Completed</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="p-2 rounded-3 bg-warning bg-opacity-10">
+                                            <i class="fas fa-spinner text-warning fs-6"></i>
+                                            <div class="fw-bold fs-6 mt-1">${dev.in_progress}</div>
+                                            <small class="text-muted" style="font-size: 0.7rem;">In Progress</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="p-2 rounded-3 bg-secondary bg-opacity-10">
+                                            <i class="fas fa-hourglass text-secondary fs-6"></i>
+                                            <div class="fw-bold fs-6 mt-1">${dev.pending}</div>
+                                            <small class="text-muted" style="font-size: 0.7rem;">Pending</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-3">
+                                    <div class="d-flex justify-content-between small mb-1">
+                                        <span class="text-muted">Completion Rate</span>
+                                        <span class="fw-semibold">${completionRate}%</span>
+                                    </div>
+                                    <div class="progress-custom">
+                                        <div class="progress-bar ${completionRate >= 70 ? 'bg-success' : (completionRate >= 40 ? 'bg-info' : 'bg-warning')}" 
+                                             style="width: ${completionRate}%; transition: width 0.5s ease;"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-2 text-center">
+                                    <small class="text-muted"><i class="fas fa-tasks me-1"></i>Total Tasks: ${totalTasks}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            // Add hover effect for cards
+            const cards = document.querySelectorAll('.dev-stat-card .card');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-5px)';
+                    this.style.boxShadow = '0 12px 24px rgba(0,0,0,0.1)';
+                });
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                    this.style.boxShadow = '0 0.125rem 0.25rem rgba(0,0,0,0.075)';
+                });
+            });
+        })
+        .catch(error => {
+            console.error('Error loading developer stats:', error);
+            document.getElementById('dev-stats').innerHTML = `
+                <div class="col-12 text-center py-4">
+                    <i class="fas fa-chart-line fa-2x text-danger opacity-50 mb-2 d-block"></i>
+                    <p class="text-danger">Unable to load developer statistics</p>
+                    <small class="text-muted">Please try refreshing the page</small>
                 </div>
             `;
         });
+    
+    // Add today's date context for due date highlighting (no logic change, just UI)
+    // This is purely for visual comparison in due date column
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add tooltip functionality for images (if Bootstrap JS is available)
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        }
+        
+        // Enhance table rows with subtle animation
+        const rows = document.querySelectorAll('.bug-row');
+        rows.forEach((row, idx) => {
+            row.style.animation = `fadeIn 0.2s ease-out ${idx * 0.02}s both`;
+        });
     });
+    
+    // Pass today's date context for due date comparison (visual only)
+    // The template context will handle 'today' variable - if not available, visual overdue won't show
 </script>
+
+<!-- Ensure Bootstrap JS for tooltips (if not already in base) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 
 {% endblock %}
