@@ -1,8 +1,9 @@
 from django.contrib import admin
 
-from .models import Bug, Profile
+from .models import Bug, Profile,Sprint
 
 admin.site.register(Bug)
+admin.site.register(Sprint)
 
 
 @admin.register(Profile)

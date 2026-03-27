@@ -119,6 +119,16 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
 
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.urls import reverse_lazy
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+from django.db.models import Sum, Avg
+from .models import Sprint, Bug 
+from .forms import SprintForm, BugForm
+
+
 
 
 
@@ -139,7 +149,8 @@ class UserBugListView(ListView):
         return Bug.objects.filter(created_by=user)
 
 
-class BugCreateView(CreateView):           
+# Update BugCreateView to handle sprints
+class BugCreateView(CreateView):
     model = Bug
     form_class = BugForm
     template_name = 'bugs/bug_form.html'
@@ -148,59 +159,71 @@ class BugCreateView(CreateView):
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
 
+        form.fields['sprint'].required = True
+        form.fields['platforms'].required = False
+
         if not self.request.user.has_perm('bugs.can_change_status'):
-            form.fields['status'].required = False   #  prevent validation error
+            form.fields['status'].required = False
 
         return form
-    
+
     def form_valid(self, form):
         if not self.request.user.has_perm('bugs.can_change_status'):
-            form.instance.status = 'Open'  #  valid choice
+            form.instance.status = 'Open'
 
-        form.instance.created_by = self.request.user
-        return super().form_valid(form)
+        self.object = form.save(commit=False)
+        self.object.created_by = self.request.user
+
+        if not form.cleaned_data.get('sprint'):
+            messages.error(self.request, 'Bug must be assigned to a sprint!')
+            return self.form_invalid(form)
+
+        self.object.save()
+
+        form.save_m2m()   # 🔥 CRITICAL FIX
+
+        messages.success(self.request, 'Bug created successfully!')
+        return redirect(self.success_url)
 
    
 
 
+# Update BugUpdateView similarly
 class BugUpdateView(UpdateView):
     model = Bug
     form_class = BugForm
     template_name = 'bugs/bug_form.html'
     success_url = reverse_lazy('bug-list')
-
+    
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
         user = self.request.user
-
-        # 🔹 If ONLY status permission → show only status field
+        
+        # Make sprint required
+        form.fields['sprint'].required = True
+        form.fields['platforms'].required = False
+        
         if user.has_perm('bugs.can_change_status') and not user.has_perm('bugs.change_bug'):
             form.fields = {
                 key: value for key, value in form.fields.items()
                 if key == 'status'
             }
-
+        
         return form
-
+    
     def form_valid(self, form):
         user = self.request.user
         bug = self.get_object()
-
-        # 🔒 Backend protection (VERY IMPORTANT)
+        
+        # Backend protection
         if user.has_perm('bugs.can_change_status') and not user.has_perm('bugs.change_bug'):
-            # Only allow status change, keep others same
             for field in [f.name for f in Bug._meta.fields]:
                 if field != 'status' and field != 'id':
                     setattr(form.instance, field, getattr(bug, field))
-
-        # Track updater
+        
         form.instance.updated_by = user
-
+        messages.success(self.request, 'Bug updated successfully!')
         return super().form_valid(form)
-
-    def form_invalid(self, form):
-        print("❌ FORM ERRORS:", form.errors)
-        return super().form_invalid(form)
 
 
 class BugDeleteView(UserPassesTestMixin, DeleteView): 
@@ -529,6 +552,116 @@ class DeveloperBugStatsAPIView(APIView):
 
         serializer = DeveloperBugStatsSerializer(data, many=True)
         return Response(serializer.data)
+    
+
+
+class SprintListView(LoginRequiredMixin, ListView):
+    model = Sprint
+    template_name = 'sprints/sprint_list.html'
+    context_object_name = 'sprints'
+    paginate_by = 20
+    success_url = reverse_lazy('bug-list')
+    
+    def get_queryset(self):
+        return Sprint.objects.all().order_by('-created_at')
+
+
+class SprintCreateView(LoginRequiredMixin, CreateView):
+    model = Sprint
+    form_class = SprintForm
+    template_name = 'sprints/sprint_form.html'
+    success_url = reverse_lazy('sprint-list')
+    
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        messages.success(self.request, 'Sprint created successfully!')
+        return super().form_valid(form)
+
+
+class SprintUpdateView(LoginRequiredMixin, UpdateView):
+    model = Sprint
+    form_class = SprintForm
+    template_name = 'sprints/sprint_form.html'
+    success_url = reverse_lazy('sprint-list')
+    
+    def form_valid(self, form):
+        messages.success(self.request, 'Sprint updated successfully!')
+        return super().form_valid(form)
+
+
+class SprintDetailView(LoginRequiredMixin, DetailView):
+    model = Sprint
+    template_name = 'sprints/sprint_detail.html'
+    context_object_name = 'sprint'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        sprint = self.get_object()
+        
+        # Get all bugs in this sprint
+        context['bugs'] = sprint.bugs.all().order_by('-created_at')
+        
+        # Get platform-wise average time spent
+        context['platform_avg_time'] = sprint.platform_wise_avg_time()
+        
+        # Get developer-wise average time spent
+        context['developer_avg_time'] = sprint.developer_wise_avg_time()
+        
+        # Get total hours spent per developer
+        context['developer_hours'] = sprint.developer_hours_spent()
+        
+        # Total time spent in sprint
+        context['total_hours'] = sprint.total_hours_spent()
+        
+        return context
+
+
+class SprintDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    model = Sprint
+    template_name = 'sprints/sprint_confirm_delete.html'
+    success_url = reverse_lazy('sprint-list')
+    
+    def test_func(self):
+        sprint = self.get_object()
+        return self.request.user.is_superuser or sprint.created_by == self.request.user
+    
+    def delete(self, request, *args, **kwargs):
+        messages.success(request, 'Sprint deleted successfully!')
+        return super().delete(request, *args, **kwargs)
+    
+
+
+# Add user-wise average time spent on bugs
+class UserListView(LoginRequiredMixin, ListView):
+    model = User
+    template_name = 'users/user_list.html'
+    context_object_name = 'users'
+    paginate_by = 20
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Calculate average time spent per bug for each user
+        users_with_avg = []
+        for user in context['users']:
+            bug_stats = Bug.objects.filter(assigned_to=user).aggregate(
+                total_time=Sum('time_spent'),
+                bug_count=Count('id', filter=Q(assigned_to=user))
+            )
+            
+            avg_time = 0
+            if bug_stats['bug_count'] > 0:
+                avg_time = bug_stats['total_time'] / bug_stats['bug_count'] / 60  # Convert to hours
+            
+            users_with_avg.append({
+                'user': user,
+                'avg_time_spent': avg_time,
+                'total_bugs': bug_stats['bug_count'],
+                'total_time': bug_stats['total_time'] / 60 if bug_stats['total_time'] else 0
+            })
+        
+        context['users_with_avg'] = users_with_avg
+        return context
 
 
 

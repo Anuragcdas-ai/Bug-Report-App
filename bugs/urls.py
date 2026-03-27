@@ -3,12 +3,21 @@ from django.contrib.auth import views as auth_views
 from .views import UserBugListView,BugCreateView,BugUpdateView,BugDeleteView,AllBugListView,BugDownloadView, BugUploadView,profile_view,profile_edit,custom_password_reset,AdminCreateUserView,change_password
 from django.contrib.auth.decorators import user_passes_test
 from .views import DeveloperBugStatsAPIView
+from .views import SprintCreateView,SprintDetailView,SprintListView,SprintUpdateView,SprintDeleteView,UserListView
 
 
 def can_edit_bug(user):
     return user.has_perm('bugs.change_bug') or user.has_perm('bugs.can_change_status')
 
 urlpatterns = [
+      # Sprint URLs
+    path('sprints/', SprintListView.as_view(), name='sprint-list'),
+    path('sprints/create/', SprintCreateView.as_view(), name='sprint-create'),
+    path('sprints/<int:pk>/', SprintDetailView.as_view(), name='sprint-detail'),
+    path('sprints/<int:pk>/edit/', SprintUpdateView.as_view(), name='sprint-update'),
+    path('sprints/<int:pk>/delete/', SprintDeleteView.as_view(), name='sprint-delete'),
+    
+    # User List with average time
     path('',UserBugListView.as_view(), name = 'bug-list'),
     path('add/',BugCreateView.as_view(),name = 'bug-add'),
     path(  'edit/<int:pk>', user_passes_test(can_edit_bug, login_url='login')(  # decorator
@@ -37,6 +46,8 @@ urlpatterns = [
     path('change-password/', change_password, name='change_password'),
 
     path('api/developer-stats/', DeveloperBugStatsAPIView.as_view(), name='developer-stats'),
+
+    
 
    
     

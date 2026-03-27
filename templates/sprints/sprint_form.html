@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{{ form.errors }}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4>{% if object %}Edit{% else %}Create{% endif %} Sprint</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        
+                        {% for field in form %}
+                            <div class="mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label">
+                                    {{ field.label }}
+                                    {% if field.field.required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+                                {{ field.errors }}
+                                {{ field }}
+                                {% if field.help_text %}
+                                    <div class="form-text">{{ field.help_text }}</div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'sprint-list' %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Save Sprint</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Add validation for lead developer not in developers list
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const leadDev = document.querySelector('#id_lead_developer').value;
+        const developers = document.querySelector('#id_developers');
+        const selectedDevs = Array.from(developers.selectedOptions).map(opt => opt.value);
+        
+        if (leadDev && selectedDevs.includes(leadDev)) {
+            e.preventDefault();
+            alert('Lead developer cannot be in the developers list');
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}

@@ -7,8 +7,11 @@
     <!-- Google Fonts & Font Awesome Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Bootstrap 5 (lightweight but we'll override with custom elegance) -->
+    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Select2 for better multi-select -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
     <style>
         * {
             margin: 0;
@@ -23,7 +26,6 @@
             line-height: 1.5;
         }
 
-        /* smooth card container */
         .form-wrapper {
             max-width: 1100px;
             margin: 2rem auto;
@@ -38,7 +40,6 @@
             transition: all 0.2s ease;
         }
 
-        /* header area */
         .form-header {
             background: linear-gradient(115deg, #0f2b3d 0%, #1b4a6e 100%);
             padding: 1.8rem 2.5rem;
@@ -69,13 +70,11 @@
             font-weight: 400;
         }
 
-        /* main form area */
         .form-body {
             padding: 2rem 2.5rem 2.2rem;
             background: #fff;
         }
 
-        /* form groups */
         .form-group-modern {
             margin-bottom: 1.7rem;
             transition: all 0.2s;
@@ -99,7 +98,6 @@
             width: 1.4rem;
         }
 
-        /* styling for all input, select, textarea */
         .form-group-modern input,
         .form-group-modern select,
         .form-group-modern textarea {
@@ -123,7 +121,6 @@
             background-color: #ffffff;
         }
 
-        /* read-only status styling */
         .readonly-status {
             background-color: #f1f5f9;
             border: 1.5px solid #e2e8f0;
@@ -141,7 +138,6 @@
             color: #3a86b4;
         }
 
-        /* custom range-like for progress? but it's an input number, we enhance */
         input[type="number"] {
             -moz-appearance: textfield;
         }
@@ -150,7 +146,6 @@
             opacity: 0.5;
         }
 
-        /* image upload area */
         .image-upload-area {
             border: 2px dashed #cbd5e1;
             border-radius: 1.25rem;
@@ -162,14 +157,7 @@
             background: #f1f9fe;
             border-color: #2c7da0;
         }
-        .custom-file-label {
-            display: inline-block;
-            font-weight: 500;
-            margin-bottom: 0.3rem;
-            color: #2c7da0;
-        }
 
-        /* two column layout for better density on larger screens */
         .form-grid-2col {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -180,7 +168,6 @@
             grid-column: span 2;
         }
 
-        /* button styling */
         .btn-elegant {
             background: linear-gradient(95deg, #1f5e3a, #2a7f4b);
             border: none;
@@ -207,7 +194,6 @@
             transform: translateY(1px);
         }
 
-        /* alert beautify */
         .alert-custom {
             background: #ffe9e6;
             border-left: 6px solid #e35f5f;
@@ -225,7 +211,6 @@
             font-size: 1.4rem;
         }
 
-        /* small hint */
         .hint-text {
             font-size: 0.7rem;
             color: #6c8faa;
@@ -233,7 +218,6 @@
             margin-left: 1.8rem;
         }
 
-        /* responsive */
         @media (max-width: 768px) {
             .form-grid-2col {
                 grid-template-columns: 1fr;
@@ -250,13 +234,11 @@
             }
         }
 
-        /* custom placeholder glow */
         ::placeholder {
             color: #b9cee0;
             font-weight: 400;
         }
 
-        /* status specific badge appearance inside select? but select stays native, fine */
         select {
             cursor: pointer;
             background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%233a7ca5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>');
@@ -265,13 +247,31 @@
             appearance: none;
         }
 
-        /* progress spinner effect? just for style */
         .progress-meter {
             font-size: 0.7rem;
             font-weight: 500;
             margin-top: 4px;
             text-align: right;
             color: #2c7da0;
+        }
+        
+        /* Required field indicator */
+        .required-field::after {
+            content: "*";
+            color: #dc3545;
+            margin-left: 4px;
+        }
+
+        /* Platform counter styling */
+        .platform-counter {
+            font-size: 0.7rem;
+            margin-top: 5px;
+            text-align: left;
+            color: #6c8faa;
+        }
+
+        .platform-counter i {
+            margin-right: 4px;
         }
     </style>
 </head>
@@ -282,12 +282,11 @@
         <div class="form-header">
             <h2>
                 <i class="fas fa-bug"></i> 
-                Bug Report & Tracking
+                {% if form.instance.pk %}Edit Bug Report{% else %}New Bug Report{% endif %}
             </h2>
             <p><i class="fas fa-pen-alt"></i> Provide detailed information to squash issues faster</p>
         </div>
         <div class="form-body">
-            <!-- errors block with enhanced visual -->
             {% if form.errors %}
             <div class="alert-custom" role="alert">
                 <i class="fas fa-exclamation-triangle"></i>
@@ -298,19 +297,56 @@
             <form method="POST" enctype="multipart/form-data" id="beautyBugForm">
                 {% csrf_token %}
                 
-                <!-- two column grid for sleek layout -->
                 <div class="form-grid-2col">
                     <!-- Title field -->
                     <div class="form-group-modern full-width">
-                        <label for="id_title"><i class="fas fa-heading"></i> Title</label>
+                        <label for="id_title"><i class="fas fa-heading"></i> Title <span class="text-danger">*</span></label>
                         {{ form.title }}
                         <div class="hint-text"><i class="fas fa-lightbulb"></i> Short, descriptive summary</div>
                     </div>
 
-                    <!-- Description field (full width) -->
+                    <!-- Description field -->
                     <div class="form-group-modern full-width">
-                        <label for="id_description"><i class="fas fa-align-left"></i> Description</label>
+                        <label for="id_description"><i class="fas fa-align-left"></i> Description <span class="text-danger">*</span></label>
                         {{ form.description }}
+                    </div>
+
+                    <!-- Sprint field -->
+                    <div class="form-group-modern">
+                        <label><i class="fas fa-tasks"></i> Sprint <span class="text-danger">*</span></label>
+                        {{ form.sprint }}
+                        {% if not form.sprint.value %}
+                        <div class="hint-text">
+                            <i class="fas fa-info-circle"></i> 
+                            <a href="{% url 'sprint-create' %}" target="_blank">Create a new sprint</a> if none exists
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Platforms field - Plain Text Input -->
+                    <div class="form-group-modern">
+                        <label><i class="fas fa-desktop"></i> Platforms <span class="text-danger">*</span></label>
+                        <input type="text" 
+                               name="platforms" 
+                               id="id_platforms"
+                               class="form-control" 
+                               value="{{ form.platforms.value|default:'' }}"
+                               placeholder="e.g., Mobile, Web, Desktop, iOS, Android, Windows"
+                               required>
+                        <div class="hint-text">
+                            <i class="fas fa-info-circle"></i> 
+                            Enter platform names separated by commas
+                        </div>
+                        <div class="platform-counter" id="platformCounter">
+                            <i class="fas fa-tag"></i> <span id="platformCount">0</span> platform(s) entered
+                        </div>
+                        {% if form.platforms.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.platforms.errors %}
+                                    <i class="fas fa-exclamation-circle"></i> {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
                     </div>
 
                     <!-- Status field with permission handling -->
@@ -332,7 +368,7 @@
                         {{ form.priority }}
                     </div>
 
-                    <!-- Progress (%) with live-ish feedback -->
+                    <!-- Progress (%) -->
                     <div class="form-group-modern">
                         <label><i class="fas fa-percent"></i> Progress (%)</label>
                         {{ form.progress }}
@@ -343,6 +379,7 @@
                     <div class="form-group-modern">
                         <label><i class="far fa-clock"></i> Time Spent (hours)</label>
                         {{ form.time_spent }}
+                        <div class="hint-text">Time spent on this bug in hours</div>
                     </div>
 
                     <!-- Assign To -->
@@ -357,13 +394,13 @@
                         {{ form.due_date }}
                     </div>
 
-                    <!-- Notes (full width) -->
+                    <!-- Notes -->
                     <div class="form-group-modern full-width">
                         <label><i class="fas fa-sticky-note"></i> Notes</label>
                         {{ form.notes }}
                     </div>
 
-                    <!-- Upload Screenshot (full width with fancy style) -->
+                    <!-- Upload Screenshot -->
                     <div class="form-group-modern full-width image-upload-area">
                         <label><i class="fas fa-camera"></i> Upload Screenshot</label>
                         {{ form.image }}
@@ -372,24 +409,29 @@
                 </div>
 
                 <!-- action buttons row -->
-                <div class="d-flex justify-content-end mt-4 pt-2">
+                <div class="d-flex justify-content-between mt-4 pt-2">
+                    <a href="{% url 'bug-list' %}" class="btn btn-outline-secondary btn-lg px-4">
+                        <i class="fas fa-arrow-left me-2"></i> Cancel
+                    </a>
                     <button type="submit" class="btn-elegant">
-                        <i class="fas fa-paper-plane"></i> Submit Bug Report
+                        <i class="fas fa-paper-plane"></i> {% if form.instance.pk %}Update Bug Report{% else %}Submit Bug Report{% endif %}
                     </button>
                 </div>
             </form>
         </div>
-        <!-- subtle footer note -->
         <div class="px-4 pb-3 text-end" style="background: #fff; border-top: 1px solid #edf2f7; font-size: 0.7rem; color:#7c9eb3;">
             <i class="fas fa-shield-alt"></i> All fields are protected & validated
         </div>
     </div>
 </div>
 
-<!-- tiny javascript to enhance progress display (purely cosmetic, no logic change) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <script>
     (function() {
-        // just for a nicer visual on progress field – shows live value update, but doesn't alter backend logic
+        // Enhance progress display
         const progressInput = document.querySelector('#id_progress');
         const progressHint = document.getElementById('progressHint');
         if (progressInput && progressHint) {
@@ -408,62 +450,95 @@
             progressInput.addEventListener('input', updateHint);
             updateHint();
         }
-        // attach subtle placeholder improvements for textarea autoheight? Not needed, but gives nice feel
-        const textareas = document.querySelectorAll('textarea');
-        textareas.forEach(ta => {
-            ta.style.resize = 'vertical';
-            ta.style.minHeight = '90px';
-        });
 
-        // enhance date input appearance with placeholder hint
-        const dateInput = document.querySelector('#id_due_date');
-        if(dateInput && !dateInput.value) {
-            dateInput.setAttribute('placeholder', 'YYYY-MM-DD');
-        }
-        // visual hint for readonly status just to match design, but no logic
-        const readOnlyDiv = document.querySelector('.readonly-status');
-        if(readOnlyDiv) {
-            readOnlyDiv.style.background = '#f8fafc';
-        }
-        // optional: dynamic background for priority field coloring? no logic change - pure UI
-        const prioritySelect = document.querySelector('#id_priority');
-        if(prioritySelect) {
-            const updatePriorityColor = () => {
-                const val = prioritySelect.options[prioritySelect.selectedIndex]?.text;
-                if(val && (val.toLowerCase().includes('high') || val.toLowerCase().includes('critical'))) {
-                    prioritySelect.style.borderLeft = '4px solid #e53e3e';
-                } else if(val && val.toLowerCase().includes('medium')) {
-                    prioritySelect.style.borderLeft = '4px solid #ed8936';
-                } else if(val && val.toLowerCase().includes('low')) {
-                    prioritySelect.style.borderLeft = '4px solid #48bb78';
+        // Enhance platforms text input with counter and auto-formatting
+        const platformsInput = document.getElementById('id_platforms');
+        const platformCountSpan = document.getElementById('platformCount');
+        
+        if (platformsInput && platformCountSpan) {
+            const updatePlatformCount = () => {
+                const value = platformsInput.value;
+                if (value && value.trim()) {
+                    const count = value.split(',').filter(p => p.trim()).length;
+                    platformCountSpan.textContent = count;
                 } else {
-                    prioritySelect.style.borderLeft = '4px solid #cbd5e0';
+                    platformCountSpan.textContent = '0';
                 }
             };
-            prioritySelect.addEventListener('change', updatePriorityColor);
-            updatePriorityColor();
+            
+            // Update counter on input
+            platformsInput.addEventListener('input', updatePlatformCount);
+            
+            // Auto-format on blur: clean up spaces
+            platformsInput.addEventListener('blur', function() {
+                let value = this.value;
+                if (value && value.trim()) {
+                    // Split, trim each platform, filter empty, join with ', '
+                    let platforms = value.split(',').map(p => p.trim()).filter(p => p);
+                    this.value = platforms.join(', ');
+                    updatePlatformCount();
+                }
+            });
+            
+            // Initial count
+            updatePlatformCount();
         }
-        // improve file input looks - making the default file input more attractive but without overriding functionality
-        const fileInput = document.querySelector('input[type="file"]');
-        if(fileInput) {
-            fileInput.classList.add('form-control', 'bg-light', 'border-0', 'py-2');
-            fileInput.style.padding = '0.7rem';
-            fileInput.style.borderRadius = '1rem';
-            fileInput.style.backgroundColor = '#ffffff';
+
+        // Optional: Add character counter for description
+        const descriptionInput = document.querySelector('#id_description');
+        if (descriptionInput) {
+            const charCounter = document.createElement('div');
+            charCounter.className = 'progress-meter';
+            charCounter.style.textAlign = 'right';
+            charCounter.style.marginTop = '5px';
+            charCounter.innerHTML = '<i class="fas fa-font"></i> <span id="charCount">0</span> characters';
+            descriptionInput.parentNode.appendChild(charCounter);
+            
+            const charCountSpan = document.getElementById('charCount');
+            const updateCharCount = () => {
+                const count = descriptionInput.value.length;
+                charCountSpan.textContent = count;
+                if (count > 500) {
+                    charCounter.style.color = '#e35f5f';
+                } else if (count > 300) {
+                    charCounter.style.color = '#f39c12';
+                } else {
+                    charCounter.style.color = '#2c7da0';
+                }
+            };
+            
+            descriptionInput.addEventListener('input', updateCharCount);
+            updateCharCount();
         }
-        // additional: for each form field, wrap existing errors in clean way? but we keep original error display
-        // original errors are already shown in alert. For inline errors we do not interfere, keep as original django logic.
-        // also assign_to field could be a select - enhance with modern width
-        const selectsAll = document.querySelectorAll('select');
-        selectsAll.forEach(sel => {
-            sel.style.backgroundSize = '16px';
+
+        // Add keyboard shortcut (Ctrl+Enter) to submit form
+        const form = document.getElementById('beautyBugForm');
+        if (form) {
+            document.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    form.submit();
+                }
+            });
+        }
+
+        // Add focus effects for better UX
+        const formGroups = document.querySelectorAll('.form-group-modern');
+        formGroups.forEach(group => {
+            const input = group.querySelector('input, select, textarea');
+            if (input) {
+                input.addEventListener('focus', () => {
+                    group.style.transform = 'translateY(-2px)';
+                    group.style.transition = 'transform 0.2s';
+                });
+                input.addEventListener('blur', () => {
+                    group.style.transform = 'translateY(0)';
+                });
+            }
         });
+
+        console.log('Bug Tracker Form Enhanced ✓ - Platform field as plain text');
     })();
 </script>
-
-<!-- optional: subtle font awesome fallback & ensure no extra fields or logic alterations.
-     The template extends base.html, but we provide self-contained beauty without extra fields.
-     The only thing we add is visual hints, icons, CSS grids, and readability.
-     No additional hidden fields or functionality changes. -->
 </body>
 </html>

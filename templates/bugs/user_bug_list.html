@@ -1,3 +1,4 @@
+<!-- bugs/user_bug_list.html - Updated with sprint and platform columns -->
 {% extends 'base.html' %}
 {% block content %}
 
@@ -17,9 +18,14 @@
                     <a href="{% url 'bug-add' %}" class="btn btn-light fw-semibold shadow-sm">
                         <i class="fas fa-plus-circle me-1"></i> Add Bug
                     </a>
+                    
 
                     <a href="{% url 'bug-download' %}" class="btn btn-outline-light fw-semibold">
                         <i class="fas fa-download me-1"></i> Download
+                    </a>
+
+                    <a href="{% url 'sprint-list' %}" class="btn btn-outline-light fw-semibold">
+                        <i class="fas fa-tasks me-1"></i> Sprints
                     </a>
 
                     {% if request.user.is_superuser %}
@@ -65,7 +71,51 @@
         </div>
     </div>
 
- 
+    <!-- Filters Section -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Sprint Filter</label>
+                    <select name="sprint" class="form-select" onchange="this.form.submit()">
+                        <option value="">All Sprints</option>
+                        {% for sprint in sprints %}
+                            <option value="{{ sprint.id }}" {% if request.GET.sprint == sprint.id|stringformat:"s" %}selected{% endif %}>
+                                {{ sprint.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Platform Filter</label>
+                    <select name="platform" class="form-select" onchange="this.form.submit()">
+                        <option value="">All Platforms</option>
+                        {% for platform in platforms %}
+                            <option value="{{ platform.id }}" {% if request.GET.platform == platform.id|stringformat:"s" %}selected{% endif %}>
+                                {{ platform.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status Filter</label>
+                    <select name="status" class="form-select" onchange="this.form.submit()">
+                        <option value="">All Status</option>
+                        <option value="Open" {% if request.GET.status == 'Open' %}selected{% endif %}>Open</option>
+                        <option value="In Progress" {% if request.GET.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                        <option value="Closed" {% if request.GET.status == 'Closed' %}selected{% endif %}>Closed</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Clear Filters</label>
+                    <a href="{% url 'bug-list' %}" class="btn btn-outline-secondary w-100">
+                        <i class="fas fa-eraser me-1"></i> Clear Filters
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Table with Enhanced Styling -->
     <div class="card border-0 shadow-lg">
         <div class="card-header bg-white border-0 py-3">
@@ -84,12 +134,14 @@
                         <tr class="text-muted">
                             <th class="py-3"><i class="fas fa-hashtag me-1"></i> Bug ID</th>
                             <th class="py-3"><i class="fas fa-heading me-1"></i> Title</th>
+                            <th class="py-3"><i class="fas fa-tasks me-1"></i> Sprint</th>
+                            <th class="py-3"><i class="fas fa-desktop me-1"></i> Platforms</th>
                             <th class="py-3"><i class="fas fa-flag-checkered me-1"></i> Status</th>
                             <th class="py-3"><i class="fas fa-user me-1"></i> Created By</th>
                             <th class="py-3"><i class="fas fa-user-edit me-1"></i> Updated By</th>
                             <th class="py-3"><i class="fas fa-clock me-1"></i> Time Spent</th>
                             <th class="py-3 text-center"><i class="fas fa-cog me-1"></i> Actions</th>
-                          </tr>
+                           </tr>
                     </thead>
 
                     <tbody>
@@ -101,10 +153,32 @@
                                     <div class="bg-light rounded-circle p-2 me-2" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">
                                         <i class="fas fa-bug text-muted small"></i>
                                     </div>
-                                    <span class="fw-semibold">{{ bug.title }}</span>
+                                    <span class="fw-semibold">{{ bug.title|truncatechars:40 }}</span>
                                 </div>
                             </td>
-
+                            <td>
+                                {% if bug.sprint %}
+                                    <a href="{% url 'sprint-detail' bug.sprint.id %}" class="text-decoration-none">
+                                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-3 py-2">
+                                            <i class="fas fa-tasks me-1"></i>
+                                            {{ bug.sprint.name|truncatechars:20 }}
+                                        </span>
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted">
+                                        <i class="fas fa-minus-circle me-1"></i>No sprint
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% for platform in bug.platforms.all %}
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary me-1 mb-1 px-2 py-1">
+                                        <i class="fas fa-desktop me-1"></i>{{ platform.name }}
+                                    </span>
+                                {% empty %}
+                                    <span class="text-muted small">No platforms</span>
+                                {% endfor %}
+                            </td>
                             <td>
                                 <span class="badge 
                                     {% if bug.status == 'Open' %}bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-2
@@ -147,7 +221,7 @@
                             <td>
                                 <span class="badge bg-light text-dark">
                                     <i class="fas fa-hourglass-half me-1 text-info"></i>
-                                    {{ bug.time_spent }} hrs
+                                    {{ bug.time_spent_display }}
                                 </span>
                             </td>
 
@@ -175,7 +249,7 @@
 
                         {% empty %}
                         <tr>
-                            <td colspan="7" class="text-center py-5">
+                            <td colspan="9" class="text-center py-5">
                                 <div class="d-flex flex-column align-items-center">
                                     <i class="fas fa-bug fa-4x text-muted mb-3"></i>
                                     <h5 class="text-muted">No bugs found</h5>
@@ -197,15 +271,38 @@
                 <small class="text-muted">
                     <i class="fas fa-info-circle me-1"></i> Showing {{ bugs|length }} bug(s)
                 </small>
-                {% if bugs %}
-                <div class="d-flex gap-2">
-                    <button class="btn btn-sm btn-outline-primary disabled">
-                        <i class="fas fa-chevron-left me-1"></i> Previous
-                    </button>
-                    <button class="btn btn-sm btn-outline-primary disabled">
-                        Next <i class="fas fa-chevron-right ms-1"></i>
-                    </button>
-                </div>
+                {% if bugs.has_other_pages %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination pagination-sm mb-0">
+                        {% if bugs.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ bugs.previous_page_number }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for num in bugs.paginator.page_range %}
+                            {% if bugs.number == num %}
+                                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% elif num > bugs.number|add:'-3' and num < bugs.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                        {{ num }}
+                                    </a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if bugs.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ bugs.next_page_number }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
                 {% endif %}
             </div>
         </div>
@@ -281,6 +378,16 @@
             opacity: 1;
             transform: translateY(0);
         }
+    }
+    
+    /* Filter section styling */
+    .form-select, .form-control {
+        border-radius: 0.5rem;
+    }
+    
+    .form-select:focus, .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
     }
 </style>
 

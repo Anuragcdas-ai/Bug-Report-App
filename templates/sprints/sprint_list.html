@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Sprints</h2>
+        <a href="{% url 'sprint-create' %}" class="btn btn-primary">Create New Sprint</a>
+    </div>
+    
+    {% if sprints %}
+        <div class="row">
+            {% for sprint in sprints %}
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">{{ sprint.name }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted">{{ sprint.description|truncatewords:30 }}</p>
+                            <p><strong>Lead Developer:</strong> {{ sprint.lead_developer.get_full_name|default:sprint.lead_developer.username }}</p>
+                            <p><strong>Team Size:</strong> {{ sprint.developers.count }} developers</p>
+                            <p><strong>Bugs:</strong> {{ sprint.bugs.count }}</p>
+                            <p><strong>Total Hours:</strong> {{ sprint.total_hours_spent|floatformat:1 }}h</p>
+                            <div class="mt-3">
+                                <a href="{% url 'sprint-detail' sprint.pk %}" class="btn btn-info btn-sm">View Details</a>
+                                <a href="{% url 'sprint-update' sprint.pk %}" class="btn btn-warning btn-sm">Edit</a>
+                                {% if user.is_superuser or sprint.created_by == user %}
+                                    <a href="{% url 'sprint-delete' sprint.pk %}" class="btn btn-danger btn-sm">Delete</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="card-footer text-muted">
+                            Created: {{ sprint.created_at|date:"M d, Y" }}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        {% if is_paginated %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                        {% else %}
+                            <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="alert alert-info">
+            No sprints found. <a href="{% url 'sprint-create' %}">Create your first sprint</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
