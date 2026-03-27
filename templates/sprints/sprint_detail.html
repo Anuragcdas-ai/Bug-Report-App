@@ -174,7 +174,11 @@
                                             {{ bug.priority }}
                                         </span>
                                     </td>
-                                    <td>{{ bug.assigned_to.get_full_name|default:bug.assigned_to.username|default:"Unassigned" }}</td>
+                                    <td>{% if bug.assigned_to %}
+                                        {{ bug.assigned_to.get_full_name|default:bug.assigned_to.username }}
+                                        {% else %}
+                                        Unassigned
+                                        {% endif %}</td>
                                     <td>
                                         {% for platform in bug.platforms.all %}
                                             <span class="badge bg-secondary">{{ platform.name }}</span>
