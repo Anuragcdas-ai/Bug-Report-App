@@ -2,6 +2,7 @@ from django.urls import path
 from django.contrib.auth import views as auth_views
 from .views import UserBugListView,BugCreateView,BugUpdateView,BugDeleteView,AllBugListView,BugDownloadView, BugUploadView,profile_view,profile_edit,custom_password_reset,AdminCreateUserView,change_password
 from django.contrib.auth.decorators import user_passes_test
+from .views import DeveloperBugStatsAPIView
 
 
 def can_edit_bug(user):
@@ -34,6 +35,8 @@ urlpatterns = [
          name='password_reset_done'),
 
     path('change-password/', change_password, name='change_password'),
+
+    path('api/developer-stats/', DeveloperBugStatsAPIView.as_view(), name='developer-stats'),
 
    
     

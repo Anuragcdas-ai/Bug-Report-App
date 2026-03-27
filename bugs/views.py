@@ -74,7 +74,6 @@
 # Django generic views
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.views import View
-from django.views.generic.edit import CreateView, UpdateView
 
 # Django shortcuts and HTTP
 from django.shortcuts import render, redirect, get_object_or_404
@@ -106,9 +105,19 @@ import pandas as pd
 import random
 import string
 
+# Django ORM
+from django.db.models import Count, Q
+
 # Local app
-from .models import Bug
+from .models import Bug, Profile
 from .forms import BugForm, ProfileForm, AdminUserCreationForm
+from .serializers import DeveloperBugStatsSerializer
+
+# Django REST Framework
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+
 
 
 
@@ -490,6 +499,36 @@ def change_password(request):
         return redirect('login')
 
     return render(request, 'bugs/change_password.html')
+
+
+
+class DeveloperBugStatsAPIView(APIView):
+
+    def get(self, request):
+        developers = User.objects.filter(profile__role='developer')
+
+        data = []
+
+        for user in developers:
+            stats = Bug.objects.filter(assigned_to=user).aggregate(
+                completed=Count('id', filter=Q(status='Closed')),
+                in_progress=Count('id', filter=Q(status='In Progress')),
+                pending=Count('id', filter=Q(status='Open')),
+            )
+
+            data.append({
+                "username": user.username,
+                "full_name": user.get_full_name() or user.username,
+                "email": user.email,
+                "role": user.profile.role,
+
+                "completed": stats['completed'],
+                "in_progress": stats['in_progress'],
+                "pending": stats['pending'],
+            })
+
+        serializer = DeveloperBugStatsSerializer(data, many=True)
+        return Response(serializer.data)
 
 
 

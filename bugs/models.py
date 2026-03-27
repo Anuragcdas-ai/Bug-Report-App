@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth.models import User, Group
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils.timezone import now
+
 
 # Create your models here.
 
@@ -35,6 +37,13 @@ class Bug(models.Model):
     updated_by = models.ForeignKey(User,on_delete=models.SET_NULL, null=True, related_name='updated_bugs')
 
 
+    @property
+    def time_spent_display(self):
+        hours = self.time_spent // 60
+        minutes = self.time_spent % 60
+        return f"{hours}h {minutes}m"
+
+
     class Meta:
      permissions = [
            ("can_change_status", "Can change bug status"),
@@ -59,7 +68,28 @@ class Bug(models.Model):
 
             self.bug_id = f"BUG{new_id:03d}"
 
+        super().save(*args, **kwargs)# need to change 
+
+    def save(self, *args, **kwargs):
+        # New bug
+        if not self.pk:
+            super().save(*args, **kwargs)
+            return
+
+        old = Bug.objects.get(pk=self.pk)
+
+        # If status changed → calculate time
+        if old.status != self.status:
+            duration = now() - self.created_at
+
+            # convert to minutes
+            self.time_spent = int(duration.total_seconds() // 60)
+
         super().save(*args, **kwargs)
+    
+
+
+    
 
 
 class Profile(models.Model):
